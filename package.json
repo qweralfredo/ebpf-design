@@ -1,0 +1,29 @@
+{
+  "name": "ebpf-script-generator-v2",
+  "version": "2.0.0",
+  "description": "ReactFlow application for generating complete eBPF scripts - New version based on ReactFlow v12",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@xyflow/react": "^12.3.2",
+    "lucide-react": "^0.400.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.0.0",
+    "react-syntax-highlighter": "^15.6.6"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.4.10"
+  }
+}

@@ -1,0 +1,393 @@
+import React, { useState } from 'react';
+import { X, Download, Code } from 'lucide-react';
+import { MultiLanguageGenerator } from '../utils/multiLanguageGenerator';
+
+const DeployModal = ({ isOpen, onClose, currentFlow, generatedCode }) => {
+  const [selectedLanguage, setSelectedLanguage] = useState('c');
+
+  if (!isOpen) return null;
+
+  // Initialize multi-language generator
+  const multiLangGen = new MultiLanguageGenerator();
+  const supportedLanguages = multiLangGen.getSupportedLanguages();
+
+  // Check if we have generated code
+  const hasCode = generatedCode && generatedCode.trim().length > 0;
+  const codeSize = hasCode ? generatedCode.length : 0;
+
+  // Handle file download
+  const handleDownload = () => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').substring(0, 19);
+    const langInfo = supportedLanguages[selectedLanguage];
+    const filename = `ebpf-program-${timestamp}${langInfo.extension}`;
+    
+    // Generate code in selected language
+    let codeToDownload;
+    if (selectedLanguage === 'c') {
+      codeToDownload = generatedCode; // Use existing C code
+    } else {
+      try {
+        codeToDownload = multiLangGen.generateCode(currentFlow.nodes, currentFlow.edges, selectedLanguage);
+      } catch (error) {
+        alert('❌ Error generating code for ' + langInfo.name + ': ' + error.message);
+        return;
+      }
+    }
+    
+    // Download main source file
+    const blob = new Blob([codeToDownload], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    // Generate and download build file
+    const programName = filename.split('.')[0];
+    const buildFile = multiLangGen.generateBuildFile(selectedLanguage, programName);
+    
+    if (buildFile) {
+      let buildFileName = 'Makefile';
+      if (selectedLanguage === 'rust') buildFileName = 'Cargo.toml';
+      else if (selectedLanguage === 'go') buildFileName = 'go.mod';
+      else if (selectedLanguage === 'python') buildFileName = 'requirements.txt';
+      else if (selectedLanguage === 'zig') buildFileName = 'build.zig';
+      
+      const buildBlob = new Blob([buildFile], { type: 'text/plain' });
+      const buildUrl = URL.createObjectURL(buildBlob);
+      const buildA = document.createElement('a');
+      buildA.href = buildUrl;
+      buildA.download = buildFileName;
+      buildA.click();
+      URL.revokeObjectURL(buildUrl);
+    }
+    
+    // Download README with instructions
+    const readmeContent = generateReadmeForLanguage(selectedLanguage, langInfo);
+    const readmeBlob = new Blob([readmeContent], { type: 'text/plain' });
+    const readmeUrl = URL.createObjectURL(readmeBlob);
+    const readmeA = document.createElement('a');
+    readmeA.href = readmeUrl;
+    readmeA.download = 'README.md';
+    readmeA.click();
+    URL.revokeObjectURL(readmeUrl);
+    
+    alert(`✅ ${langInfo.name} files downloaded successfully!`);
+  };
+
+  // Generate README content for each language
+  const generateReadmeForLanguage = (language, langInfo) => {
+    const instructions = {
+      c: `# eBPF Program (C)
+
+## Prerequisites
+\`\`\`bash
+sudo apt install clang llvm libbpf-dev
+\`\`\`
+
+## Build and Run
+\`\`\`bash
+make                    # Compile the program
+sudo make install       # Install to /sys/fs/bpf/
+sudo make load          # Load the program
+sudo make unload        # Unload the program
+\`\`\``,
+
+      cpp: `# eBPF Program (C++)
+
+## Prerequisites
+\`\`\`bash
+sudo apt install clang llvm libbpf-dev
+\`\`\`
+
+## Build and Run
+\`\`\`bash
+make                    # Compile the program
+sudo make install       # Install to /sys/fs/bpf/
+sudo make load          # Load the program
+sudo make unload        # Unload the program
+\`\`\``,
+
+      rust: `# eBPF Program (Rust)
+
+## Prerequisites
+\`\`\`bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+cargo install bpf-linker
+\`\`\`
+
+## Build and Run
+\`\`\`bash
+cargo build --release
+sudo ./target/release/ebpf-program
+\`\`\``,
+
+      go: `# eBPF Program (Go)
+
+## Prerequisites
+\`\`\`bash
+go install github.com/cilium/ebpf/cmd/bpf2go@latest
+\`\`\`
+
+## Build and Run
+\`\`\`bash
+go generate
+go build
+sudo ./ebpf-program
+\`\`\``,
+
+      python: `# eBPF Program (Python/BCC)
+
+## Prerequisites
+\`\`\`bash
+sudo apt install python3-bcc
+pip install -r requirements.txt
+\`\`\`
+
+## Run
+\`\`\`bash
+sudo python3 ebpf-program.py
+\`\`\``,
+
+      zig: `# eBPF Program (Zig)
+
+## Prerequisites
+\`\`\`bash
+wget https://ziglang.org/download/0.11.0/zig-linux-x86_64-0.11.0.tar.xz
+tar -xf zig-linux-x86_64-0.11.0.tar.xz
+export PATH=$PATH:$(pwd)/zig-linux-x86_64-0.11.0
+\`\`\`
+
+## Build and Run
+\`\`\`bash
+zig build
+sudo ./zig-out/bin/ebpf-program
+\`\`\``
+    };
+
+    return `${instructions[language] || '# eBPF Program'}
+
+## Generated by Super eBPF Builder
+
+This eBPF program was generated using the Super eBPF Visual Builder.
+
+Language: ${langInfo.name} ${langInfo.icon}
+Generated: ${new Date().toISOString()}
+
+## Notes
+- Make sure you have the required dependencies installed
+- Run with sudo privileges for eBPF operations
+- Modify the interface name in the code as needed
+- Check kernel version compatibility for eBPF features
+
+## Troubleshooting
+- Ensure kernel has eBPF support enabled
+- Check dmesg for eBPF loading errors
+- Verify interface names match your system
+- Use bpftool for debugging: \`sudo bpftool prog list\`
+`;
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert('📋 Copied to clipboard!');
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl h-5/6 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <Download className="w-8 h-8 text-blue-600" />
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Download eBPF Program</h2>
+              <p className="text-gray-600">Download your eBPF program files</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Code validation warning */}
+          {!hasCode && (
+            <div className="mb-6 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+              <div className="flex items-center gap-2 text-yellow-800">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.888-.833-2.598 0L3.732 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <strong>No eBPF code generated</strong>
+              </div>
+              <p className="text-yellow-700 text-sm mt-1">
+                Create some nodes in your flow and click "Generate eBPF Code" before downloading.
+              </p>
+            </div>
+          )}
+
+          {/* Download Content */}
+          <div className="space-y-6">
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-green-900 mb-2">📥 Download Files</h3>
+                <p className="text-green-800 text-sm">
+                  Download the generated eBPF program and compilation files to your local machine.
+                  <br />
+                  <strong>Includes:</strong> Source code, build files, and compilation instructions.
+                </p>
+              </div>
+
+              {/* Language Selection */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Code className="w-5 h-5" />
+                  Select Programming Language
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {Object.entries(supportedLanguages).map(([key, lang]) => (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedLanguage(key)}
+                      className={`p-3 border-2 rounded-lg text-left transition-all ${
+                        selectedLanguage === key
+                          ? 'border-green-500 bg-green-50 text-green-900'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-sm font-bold">
+                          {lang.icon}
+                        </div>
+                        <div>
+                          <div className="font-medium">{lang.name}</div>
+                          <div className="text-xs text-gray-500">{lang.extension}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-blue-800 text-sm">
+                    <strong>Selected:</strong> {supportedLanguages[selectedLanguage].name} - 
+                    Modern eBPF development with proper toolchain and libraries.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="font-semibold text-gray-900 mb-4">Files to be downloaded:</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-sm font-mono">
+                        {supportedLanguages[selectedLanguage].icon}
+                      </div>
+                      <div>
+                        <div className="font-medium">eBPF Program Source</div>
+                        <div className="text-sm text-gray-600">
+                          {supportedLanguages[selectedLanguage].name} source code ({supportedLanguages[selectedLanguage].extension})
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-500">~{Math.ceil(codeSize / 1024) || 1}KB</div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center text-sm font-mono">⚙️</div>
+                      <div>
+                        <div className="font-medium">Build Configuration</div>
+                        <div className="text-sm text-gray-600">
+                          {selectedLanguage === 'rust' ? 'Cargo.toml' : 
+                           selectedLanguage === 'go' ? 'go.mod' :
+                           selectedLanguage === 'python' ? 'requirements.txt' :
+                           selectedLanguage === 'zig' ? 'build.zig' : 'Makefile'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-500">~1-2KB</div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-sm font-mono">📖</div>
+                      <div>
+                        <div className="font-medium">README & Instructions</div>
+                        <div className="text-sm text-gray-600">Setup and compilation guide</div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-500">~2-3KB</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-yellow-900 mb-2">📋 Quick Start Instructions</h4>
+                <div className="text-sm text-yellow-800 space-y-1">
+                  {selectedLanguage === 'c' && (
+                    <>
+                      <p>1. Install: <code className="bg-yellow-200 px-1 rounded">sudo apt install clang llvm libbpf-dev</code></p>
+                      <p>2. Compile: <code className="bg-yellow-200 px-1 rounded">make</code></p>
+                      <p>3. Load: <code className="bg-yellow-200 px-1 rounded">sudo make load</code></p>
+                    </>
+                  )}
+                  {selectedLanguage === 'cpp' && (
+                    <>
+                      <p>1. Install: <code className="bg-yellow-200 px-1 rounded">sudo apt install clang llvm libbpf-dev</code></p>
+                      <p>2. Compile: <code className="bg-yellow-200 px-1 rounded">make</code></p>
+                      <p>3. Load: <code className="bg-yellow-200 px-1 rounded">sudo make load</code></p>
+                    </>
+                  )}
+                  {selectedLanguage === 'rust' && (
+                    <>
+                      <p>1. Install Rust: <code className="bg-yellow-200 px-1 rounded">curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</code></p>
+                      <p>2. Install linker: <code className="bg-yellow-200 px-1 rounded">cargo install bpf-linker</code></p>
+                      <p>3. Build: <code className="bg-yellow-200 px-1 rounded">cargo build --release</code></p>
+                    </>
+                  )}
+                  {selectedLanguage === 'go' && (
+                    <>
+                      <p>1. Install Go 1.21+ and: <code className="bg-yellow-200 px-1 rounded">go install github.com/cilium/ebpf/cmd/bpf2go@latest</code></p>
+                      <p>2. Generate: <code className="bg-yellow-200 px-1 rounded">go generate</code></p>
+                      <p>3. Build: <code className="bg-yellow-200 px-1 rounded">go build</code></p>
+                    </>
+                  )}
+                  {selectedLanguage === 'python' && (
+                    <>
+                      <p>1. Install BCC: <code className="bg-yellow-200 px-1 rounded">sudo apt install python3-bcc</code></p>
+                      <p>2. Install deps: <code className="bg-yellow-200 px-1 rounded">pip install -r requirements.txt</code></p>
+                      <p>3. Run: <code className="bg-yellow-200 px-1 rounded">sudo python3 program.py</code></p>
+                    </>
+                  )}
+                  {selectedLanguage === 'zig' && (
+                    <>
+                      <p>1. Install Zig 0.11+ from ziglang.org</p>
+                      <p>2. Build: <code className="bg-yellow-200 px-1 rounded">zig build</code></p>
+                      <p>3. Run: <code className="bg-yellow-200 px-1 rounded">sudo ./zig-out/bin/program</code></p>
+                    </>
+                  )}
+                  <p className="mt-2 text-yellow-700">📝 Complete instructions included in downloaded README.md</p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleDownload}
+                disabled={!hasCode}
+                className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                Download Files
+              </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DeployModal;

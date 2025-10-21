@@ -1,0 +1,1584 @@
+{
+  "categories": {
+    "observability": "Observability & Performance Analysis",
+    "networking": "Networking (XDP & TC)",
+    "security": "Security (Runtime & Kernel)",
+    "filesystem": "File Systems & Storage",
+    "runtime": "Runtime & Process Execution",
+    "containers": "Container Platforms & Cloud",
+    "development": "Development & Build Tools",
+    "protocols": "Network & Application Protocols",
+    "system": "System Tools & Administration",
+    "future": "Future Projects & Concepts"
+  },
+  "templates": [
+    {
+      "id": "bcc-tools-execsnoop",
+      "name": "BCC execsnoop",
+      "description": "Monitor process execution using BCC tools style execsnoop implementation",
+      "category": "observability",
+      "software": "BCC Tools",
+      "tags": ["BCC", "process", "monitoring", "execve"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Attach to execve",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "syscalls:sys_enter_execve"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable", 
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Get PID",
+            "variableType": "u32",
+            "operation": "bpf_get_current_pid_tgid",
+            "name": "pid"
+          }
+        },
+        {
+          "id": "var-2",
+          "type": "variable",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Get Command",
+            "variableType": "char[256]",
+            "operation": "bpf_get_current_comm",
+            "name": "comm"
+          }
+        },
+        {
+          "id": "output-1",
+          "type": "output",
+          "position": { "x": 700, "y": 100 },
+          "data": {
+            "label": "Print Execution Event",
+            "outputType": "bpf_trace_printk",
+            "format": "PID %d executed: %s"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "var-2"},
+        {"id": "e3", "source": "var-2", "target": "output-1"}
+      ]
+    },
+    {
+      "id": "bcc-tools-biosnoop", 
+      "name": "BCC biosnoop",
+      "description": "Monitor block I/O operations like BCC biosnoop tool",
+      "category": "observability",
+      "software": "BCC Tools",
+      "tags": ["BCC", "I/O", "block", "disk"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Attach to blk_account_io_start",
+            "attachmentType": "KPROBE",
+            "targetFunction": "blk_account_io_start"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Get Request Info",
+            "variableType": "struct request*",
+            "operation": "PT_REGS_PARM1",
+            "name": "req"
+          }
+        },
+        {
+          "id": "output-1", 
+          "type": "output",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Trace I/O Event",
+            "outputType": "bpf_trace_printk",
+            "format": "Block I/O: sector=%lu size=%u"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "output-1"}
+      ]
+    },
+    {
+      "id": "bpftrace-syscall-counter",
+      "name": "BPFtrace Syscall Counter",
+      "description": "Count system calls per process using BPFtrace style implementation",
+      "category": "observability",
+      "software": "BPFtrace",
+      "tags": ["BPFtrace", "syscall", "counter", "statistics"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Attach to syscall entry",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "raw_syscalls:sys_enter"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Count by syscall",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "increment",
+            "keyType": "u64",
+            "valueType": "u64"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "prometheus-metrics-collector",
+      "name": "Prometheus Metrics Collector",
+      "description": "Collect custom metrics for Prometheus using eBPF",
+      "category": "observability", 
+      "software": "Prometheus",
+      "tags": ["Prometheus", "metrics", "monitoring", "exporter"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Attach to function",
+            "attachmentType": "KPROBE",
+            "targetFunction": "tcp_sendmsg"
+          }
+        },
+        {
+          "id": "counter-1",
+          "type": "counter",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Network bytes sent",
+            "counterType": "BPF_MAP_TYPE_PERCPU_ARRAY",
+            "operation": "add",
+            "key": "tcp_bytes_sent"
+          }
+        },
+        {
+          "id": "output-1",
+          "type": "output",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Export to userspace",
+            "outputType": "bpf_perf_event_output",
+            "format": "metric_data"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "counter-1"},
+        {"id": "e2", "source": "counter-1", "target": "output-1"}
+      ]
+    },
+    {
+      "id": "jaeger-distributed-tracing",
+      "name": "Jaeger Distributed Tracing",
+      "description": "Collect tracing data for Jaeger distributed tracing system",
+      "category": "observability",
+      "software": "Jaeger",
+      "tags": ["Jaeger", "tracing", "distributed", "spans"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "HTTP request start",
+            "attachmentType": "UPROBE",
+            "targetFunction": "http_handler_start"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Create span ID",
+            "variableType": "u64",
+            "operation": "bpf_get_prandom_u32",
+            "name": "span_id"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Store span",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "update",
+            "keyType": "u64",
+            "valueType": "struct span_data"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "cilium-cni-network",
+      "name": "Cilium CNI Network Policy", 
+      "description": "Implement network policies using Cilium-style eBPF for Kubernetes",
+      "category": "networking",
+      "software": "Cilium",
+      "tags": ["Cilium", "CNI", "Kubernetes", "network-policy"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "XDP Ingress",
+            "attachmentType": "XDP",
+            "targetFunction": "cilium_xdp_ingress",
+            "interface": "eth0"
+          }
+        },
+        {
+          "id": "packet-1",
+          "type": "packet",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Parse Ethernet",
+            "accessType": "ETHERNET_HEADER",
+            "field": "h_proto"
+          }
+        },
+        {
+          "id": "conditional-1",
+          "type": "conditional",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Check IP protocol",
+            "condition": "protocol",
+            "operator": "==",
+            "value": "ETH_P_IP"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 700, "y": 50 },
+          "data": {
+            "label": "Policy lookup",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "lookup",
+            "keyType": "struct endpoint_key",
+            "valueType": "struct policy_entry"
+          }
+        },
+        {
+          "id": "return-1",
+          "type": "return",
+          "position": { "x": 900, "y": 50 },
+          "data": {
+            "label": "Allow/Drop",
+            "action": "XDP_PASS/XDP_DROP",
+            "returnCode": "policy_decision"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "packet-1"},
+        {"id": "e2", "source": "packet-1", "target": "conditional-1"},
+        {"id": "e3", "source": "conditional-1", "target": "map-1", "label": "IP"},
+        {"id": "e4", "source": "map-1", "target": "return-1"}
+      ]
+    },
+    {
+      "id": "katran-l4-load-balancer",
+      "name": "Katran L4 Load Balancer",
+      "description": "High-performance L4 load balancer using XDP like Cloudflare Katran",
+      "category": "networking",
+      "software": "Cloudflare Katran",
+      "tags": ["Katran", "load-balancer", "XDP", "L4"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "XDP Load Balancer",
+            "attachmentType": "XDP",
+            "targetFunction": "xdp_lb_main"
+          }
+        },
+        {
+          "id": "packet-1",
+          "type": "packet",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Parse IP+TCP",
+            "accessType": "IP_TCP_HEADER",
+            "field": "dest_port"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Backend selection",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "lookup",
+            "keyType": "struct vip_key",
+            "valueType": "struct backend_pool"
+          }
+        },
+        {
+          "id": "packet-2",
+          "type": "packet",
+          "position": { "x": 700, "y": 100 },
+          "data": {
+            "label": "Rewrite destination",
+            "accessType": "IP_HEADER",
+            "field": "daddr",
+            "operation": "modify"
+          }
+        },
+        {
+          "id": "return-1",
+          "type": "return",
+          "position": { "x": 900, "y": 100 },
+          "data": {
+            "label": "Forward to backend",
+            "action": "XDP_TX",
+            "returnCode": 3
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "packet-1"},
+        {"id": "e2", "source": "packet-1", "target": "map-1"},
+        {"id": "e3", "source": "map-1", "target": "packet-2"},
+        {"id": "e4", "source": "packet-2", "target": "return-1"}
+      ]
+    },
+    {
+      "id": "falco-runtime-security",
+      "name": "Falco Runtime Security",
+      "description": "Runtime security monitoring like Falco for containers and hosts",
+      "category": "security",
+      "software": "Falco",
+      "tags": ["Falco", "security", "runtime", "containers"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Monitor sys_execve",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "syscalls:sys_enter_execve"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Get process info",
+            "variableType": "struct task_struct*",
+            "operation": "bpf_get_current_task",
+            "name": "task"
+          }
+        },
+        {
+          "id": "conditional-1",
+          "type": "conditional",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Check suspicious patterns",
+            "condition": "is_suspicious_binary",
+            "operator": "==",
+            "value": "1"
+          }
+        },
+        {
+          "id": "output-1",
+          "type": "output",
+          "position": { "x": 700, "y": 50 },
+          "data": {
+            "label": "Generate security alert",
+            "outputType": "bpf_perf_event_output",
+            "format": "security_event"
+          }
+        },
+        {
+          "id": "return-1",
+          "type": "return",
+          "position": { "x": 700, "y": 150 },
+          "data": {
+            "label": "Continue execution",
+            "action": "BPF_OK",
+            "returnCode": 0
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "conditional-1"},
+        {"id": "e3", "source": "conditional-1", "target": "output-1", "label": "suspicious"},
+        {"id": "e4", "source": "conditional-1", "target": "return-1", "label": "normal"}
+      ]
+    },
+    {
+      "id": "tetragon-security-policy",
+      "name": "Tetragon Security Policy",
+      "description": "File system and syscall security policies using Tetragon approach",
+      "category": "security",
+      "software": "Tetragon (Cilium)",
+      "tags": ["Tetragon", "security", "filesystem", "policy"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Monitor file access",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "syscalls:sys_enter_openat"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Extract filename",
+            "variableType": "char[256]",
+            "operation": "bpf_probe_read_user_str",
+            "name": "filename"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Policy lookup",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "lookup",
+            "keyType": "char[256]",
+            "valueType": "struct file_policy"
+          }
+        },
+        {
+          "id": "conditional-1",
+          "type": "conditional",
+          "position": { "x": 700, "y": 100 },
+          "data": {
+            "label": "Check policy action",
+            "condition": "policy->action",
+            "operator": "==",
+            "value": "POLICY_DENY"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "map-1"},
+        {"id": "e3", "source": "map-1", "target": "conditional-1"}
+      ]
+    },
+    {
+      "id": "ext4-filesystem-monitor",
+      "name": "EXT4 Filesystem Monitor",
+      "description": "Monitor EXT4 filesystem operations for performance analysis",
+      "category": "filesystem",
+      "software": "EXT4",
+      "tags": ["EXT4", "filesystem", "I/O", "performance"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "EXT4 read operation",
+            "attachmentType": "KPROBE",
+            "targetFunction": "ext4_file_read_iter"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Get read size",
+            "variableType": "size_t",
+            "operation": "PT_REGS_PARM2",
+            "name": "read_size"
+          }
+        },
+        {
+          "id": "counter-1",
+          "type": "counter",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Count read bytes",
+            "counterType": "BPF_MAP_TYPE_PERCPU_ARRAY",
+            "operation": "add",
+            "key": "ext4_read_bytes"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "counter-1"}
+      ]
+    },
+    {
+      "id": "docker-container-monitor", 
+      "name": "Docker Container Monitor",
+      "description": "Monitor Docker container system calls and resource usage",
+      "category": "containers",
+      "software": "Docker",
+      "tags": ["Docker", "containers", "monitoring", "syscalls"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Monitor container syscalls",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "raw_syscalls:sys_enter"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Get container ID",
+            "variableType": "u64",
+            "operation": "bpf_get_current_cgroup_id",
+            "name": "cgroup_id"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Container syscall stats",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "increment",
+            "keyType": "struct container_key",
+            "valueType": "u64"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "kubernetes-pod-tracer",
+      "name": "Kubernetes Pod Tracer",
+      "description": "Trace Kubernetes pod resource allocation and network activity",
+      "category": "containers",
+      "software": "Kubernetes",
+      "tags": ["Kubernetes", "pods", "resources", "network"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Pod network activity",
+            "attachmentType": "TC",
+            "targetFunction": "tc_pod_ingress",
+            "interface": "eth0"
+          }
+        },
+        {
+          "id": "packet-1",
+          "type": "packet",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Parse pod traffic",
+            "accessType": "IP_HEADER",
+            "field": "daddr"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Pod traffic stats",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "update",
+            "keyType": "u32",
+            "valueType": "struct traffic_stats"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "packet-1"},
+        {"id": "e2", "source": "packet-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "gcc-build-tracer",
+      "name": "GCC Build Performance Tracer",
+      "description": "Monitor GCC compilation performance and build bottlenecks",
+      "category": "development",
+      "software": "GCC",
+      "tags": ["GCC", "compilation", "build", "performance"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "GCC process start",
+            "attachmentType": "UPROBE",
+            "targetFunction": "main",
+            "binary": "/usr/bin/gcc"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Start timestamp",
+            "variableType": "u64",
+            "operation": "bpf_ktime_get_ns",
+            "name": "start_time"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Store compile start",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "update",
+            "keyType": "u32",
+            "valueType": "u64"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "http2-performance-monitor",
+      "name": "HTTP/2 Performance Monitor",
+      "description": "Monitor HTTP/2 connection performance and stream multiplexing",
+      "category": "protocols",
+      "software": "HTTP/2 implementations",
+      "tags": ["HTTP/2", "performance", "streams", "multiplexing"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "HTTP/2 frame processing",
+            "attachmentType": "UPROBE",
+            "targetFunction": "nghttp2_session_recv"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Frame type",
+            "variableType": "u8",
+            "operation": "PT_REGS_PARM2",
+            "name": "frame_type"
+          }
+        },
+        {
+          "id": "counter-1",
+          "type": "counter",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Count frames by type",
+            "counterType": "BPF_MAP_TYPE_HASH",
+            "operation": "increment",
+            "key": "frame_type"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "counter-1"}
+      ]
+    },
+    {
+      "id": "enhanced-top-command",
+      "name": "Enhanced top Command",
+      "description": "Enhanced version of top command using eBPF for better process monitoring",
+      "category": "system",
+      "software": "top/htop replacement",
+      "tags": ["top", "htop", "process", "monitoring"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Process scheduling",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "sched:sched_switch"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Process info",
+            "variableType": "struct task_struct*",
+            "operation": "bpf_get_current_task",
+            "name": "task"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Update process stats",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "update",
+            "keyType": "u32",
+            "valueType": "struct process_stats"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "faas-function-tracer",
+      "name": "FaaS Function Tracer",
+      "description": "Monitor Function-as-a-Service runtime performance and cold starts",
+      "category": "future",
+      "software": "AWS Lambda, Azure Functions",
+      "tags": ["FaaS", "serverless", "Lambda", "cold-start"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Function invocation",
+            "attachmentType": "UPROBE",
+            "targetFunction": "lambda_handler_start"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Invocation ID",
+            "variableType": "u64",
+            "operation": "PT_REGS_PARM1",
+            "name": "invocation_id"
+          }
+        },
+        {
+          "id": "var-2",
+          "type": "variable",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Start time",
+            "variableType": "u64",
+            "operation": "bpf_ktime_get_ns",
+            "name": "start_time"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 700, "y": 100 },
+          "data": {
+            "label": "Track function execution",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "update",
+            "keyType": "u64",
+            "valueType": "struct function_stats"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "var-2"},
+        {"id": "e3", "source": "var-2", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "grafana-metrics-collector",
+      "name": "Grafana Metrics Collector", 
+      "description": "Collect and expose custom metrics for Grafana dashboards",
+      "category": "observability",
+      "software": "Grafana",
+      "tags": ["Grafana", "metrics", "visualization", "dashboard"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Collect CPU usage",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "sched:sched_switch"
+          }
+        },
+        {
+          "id": "counter-1",
+          "type": "counter",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "CPU time counter",
+            "counterType": "BPF_MAP_TYPE_PERCPU_ARRAY",
+            "operation": "increment"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "counter-1"}
+      ]
+    },
+    {
+      "id": "datadog-agent-tracer",
+      "name": "DataDog Agent Tracer",
+      "description": "Infrastructure monitoring like DataDog Agent using eBPF",
+      "category": "observability",
+      "software": "DataDog Agent",
+      "tags": ["DataDog", "APM", "infrastructure", "monitoring"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "System call monitoring",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "raw_syscalls:sys_enter"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Syscall statistics",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "increment"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "newrelic-apm-tracer",
+      "name": "New Relic APM Tracer",
+      "description": "Application performance monitoring like New Relic Agent",
+      "category": "observability", 
+      "software": "New Relic Agent",
+      "tags": ["New Relic", "APM", "application", "performance"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "HTTP request tracing",
+            "attachmentType": "UPROBE",
+            "targetFunction": "http_request_handler"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Request duration",
+            "variableType": "u64",
+            "operation": "bpf_ktime_get_ns"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"}
+      ]
+    },
+    {
+      "id": "elasticsearch-beats-collector",
+      "name": "Elasticsearch Beats Collector",
+      "description": "Log and metric collection like Elastic Beats using eBPF", 
+      "category": "observability",
+      "software": "Elastic Observability (Beats)",
+      "tags": ["Elasticsearch", "Beats", "logs", "metrics"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "File system events",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "syscalls:sys_enter_write"
+          }
+        },
+        {
+          "id": "output-1",
+          "type": "output",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Send to Elasticsearch",
+            "outputType": "bpf_perf_event_output"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "output-1"}
+      ]
+    },
+    {
+      "id": "calico-ebpf-dataplane",
+      "name": "Calico eBPF Dataplane",
+      "description": "High-performance networking for Calico using eBPF dataplane",
+      "category": "networking",
+      "software": "Calico",
+      "tags": ["Calico", "CNI", "dataplane", "networking"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "TC ingress hook",
+            "attachmentType": "TC",
+            "targetFunction": "calico_tc_ingress"
+          }
+        },
+        {
+          "id": "packet-1",
+          "type": "packet",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Parse packet headers",
+            "accessType": "IP_HEADER"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "packet-1"}
+      ]
+    },
+    {
+      "id": "kube-proxy-replacement",
+      "name": "Kube-proxy Replacement",
+      "description": "Replace kube-proxy with eBPF for efficient L4 load balancing",
+      "category": "networking",
+      "software": "Kubernetes (kube-proxy replacement)",
+      "tags": ["Kubernetes", "kube-proxy", "load-balancer", "L4"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Service routing",
+            "attachmentType": "TC",
+            "targetFunction": "kube_service_lb"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Service endpoint lookup",
+            "mapType": "BPF_MAP_TYPE_HASH"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "xdp-firewall-high-perf",
+      "name": "XDP High-Performance Firewall",
+      "description": "Ultra-fast packet filtering firewall using XDP",
+      "category": "networking",
+      "software": "High-performance Firewalls",
+      "tags": ["XDP", "firewall", "filtering", "performance"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "XDP filter",
+            "attachmentType": "XDP",
+            "targetFunction": "xdp_firewall_main"
+          }
+        },
+        {
+          "id": "packet-1",
+          "type": "packet",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Parse IP + ports",
+            "accessType": "IP_TCP_UDP_HEADER"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Firewall rules lookup",
+            "mapType": "BPF_MAP_TYPE_LPM_TRIE"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "packet-1"},
+        {"id": "e2", "source": "packet-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "tracee-security-monitor",
+      "name": "Tracee Security Monitor",
+      "description": "Runtime security monitoring like Aqua Tracee",
+      "category": "security",
+      "software": "Tracee (by Aqua)",
+      "tags": ["Tracee", "security", "runtime", "forensics"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Security event detection",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "syscalls:sys_enter_execve"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Process context",
+            "variableType": "struct task_struct*",
+            "operation": "bpf_get_current_task"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"}
+      ]
+    },
+    {
+      "id": "selinux-policy-enforcer",
+      "name": "SELinux Policy Enforcer",
+      "description": "Enhance SELinux policies with eBPF-based enforcement",
+      "category": "security",
+      "software": "SELinux",
+      "tags": ["SELinux", "MAC", "policy", "enforcement"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "File access control",
+            "attachmentType": "LSM",
+            "targetFunction": "security_file_open"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Policy decision",
+            "mapType": "BPF_MAP_TYPE_HASH"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "xfs-performance-monitor", 
+      "name": "XFS Performance Monitor",
+      "description": "Monitor XFS filesystem performance for large storage volumes",
+      "category": "filesystem",
+      "software": "XFS",
+      "tags": ["XFS", "filesystem", "performance", "storage"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "XFS operations",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "xfs:xfs_file_read"
+          }
+        },
+        {
+          "id": "counter-1",
+          "type": "counter",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "I/O operations count",
+            "counterType": "BPF_MAP_TYPE_PERCPU_ARRAY"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "counter-1"}
+      ]
+    },
+    {
+      "id": "ceph-distributed-fs-monitor",
+      "name": "Ceph Distributed FS Monitor",
+      "description": "Monitor Ceph distributed filesystem performance",
+      "category": "filesystem",
+      "software": "Ceph", 
+      "tags": ["Ceph", "distributed", "filesystem", "cluster"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Ceph OSD operations",
+            "attachmentType": "UPROBE",
+            "targetFunction": "ceph_osd_op_start"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Operation latency",
+            "variableType": "u64",
+            "operation": "bpf_ktime_get_ns"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"}
+      ]
+    },
+    {
+      "id": "jvm-runtime-monitor",
+      "name": "JVM Runtime Monitor", 
+      "description": "Monitor Java Virtual Machine performance and garbage collection",
+      "category": "runtime",
+      "software": "Java Virtual Machine (JVM)",
+      "tags": ["JVM", "Java", "GC", "performance"],
+      "initialNodes": [
+        {
+          "id": "attach-1", 
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "JVM method calls",
+            "attachmentType": "UPROBE",
+            "targetFunction": "java_method_entry"
+          }
+        },
+        {
+          "id": "counter-1",
+          "type": "counter",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Method invocation count",
+            "counterType": "BPF_MAP_TYPE_HASH"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "counter-1"}
+      ]
+    },
+    {
+      "id": "golang-runtime-tracer",
+      "name": "Golang Runtime Tracer",
+      "description": "Monitor Go runtime goroutines and scheduler performance",
+      "category": "runtime",
+      "software": "Golang Runtime",
+      "tags": ["Golang", "goroutines", "scheduler", "runtime"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment", 
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Goroutine scheduling",
+            "attachmentType": "UPROBE",
+            "targetFunction": "runtime.schedule"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Goroutine stats",
+            "mapType": "BPF_MAP_TYPE_HASH"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "istio-service-mesh-tracer",
+      "name": "Istio Service Mesh Tracer",
+      "description": "High-performance service mesh data plane using eBPF",
+      "category": "containers",
+      "software": "Istio",
+      "tags": ["Istio", "service-mesh", "sidecar", "L7"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Service mesh intercept",
+            "attachmentType": "SOCKOPS",
+            "targetFunction": "istio_sockops"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Service routing",
+            "mapType": "BPF_MAP_TYPE_HASH"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "aws-nitro-network-optimizer",
+      "name": "AWS Nitro Network Optimizer",
+      "description": "Network optimization for AWS Nitro instances using eBPF",
+      "category": "containers",
+      "software": "AWS (Nitro)",
+      "tags": ["AWS", "Nitro", "network", "optimization"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Network acceleration",
+            "attachmentType": "XDP",
+            "targetFunction": "nitro_network_accel"
+          }
+        },
+        {
+          "id": "packet-1",
+          "type": "packet",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Packet classification",
+            "accessType": "ETHERNET_HEADER"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "packet-1"}
+      ]
+    },
+    {
+      "id": "llvm-compilation-tracer",
+      "name": "LLVM Compilation Tracer",
+      "description": "Monitor LLVM compilation phases and optimization performance",
+      "category": "development",
+      "software": "LLVM",
+      "tags": ["LLVM", "compilation", "optimization", "compiler"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "LLVM pass execution",
+            "attachmentType": "UPROBE",
+            "targetFunction": "llvm_pass_run"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Pass duration",
+            "variableType": "u64",
+            "operation": "bpf_ktime_get_ns"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"}
+      ]
+    },
+    {
+      "id": "bazel-build-analyzer",
+      "name": "Bazel Build Analyzer",
+      "description": "Analyze Bazel build performance and caching effectiveness",
+      "category": "development",
+      "software": "Bazel",
+      "tags": ["Bazel", "build", "cache", "performance"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Bazel action execution",
+            "attachmentType": "UPROBE",
+            "targetFunction": "bazel_action_execute"
+          }
+        },
+        {
+          "id": "counter-1",
+          "type": "counter",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Cache hit/miss counter",
+            "counterType": "BPF_MAP_TYPE_PERCPU_ARRAY"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "counter-1"}
+      ]
+    },
+    {
+      "id": "http3-quic-monitor",
+      "name": "HTTP/3 QUIC Monitor",
+      "description": "Monitor HTTP/3 over QUIC protocol performance and packet loss",
+      "category": "protocols",
+      "software": "HTTP/3 (QUIC)",
+      "tags": ["HTTP/3", "QUIC", "protocol", "UDP"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "QUIC packet processing",
+            "attachmentType": "XDP",
+            "targetFunction": "quic_packet_handler"
+          }
+        },
+        {
+          "id": "packet-1",
+          "type": "packet",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Parse QUIC headers",
+            "accessType": "UDP_HEADER"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "packet-1"}
+      ]
+    },
+    {
+      "id": "tls-handshake-analyzer",
+      "name": "TLS Handshake Analyzer",
+      "description": "Analyze TLS/SSL handshake latency and cipher selection",
+      "category": "protocols",
+      "software": "TLS/SSL implementations",
+      "tags": ["TLS", "SSL", "handshake", "crypto"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "TLS handshake start",
+            "attachmentType": "UPROBE",
+            "targetFunction": "ssl_handshake_start"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Handshake timestamp",
+            "variableType": "u64", 
+            "operation": "bpf_ktime_get_ns"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"}
+      ]
+    },
+    {
+      "id": "enhanced-netstat-tool",
+      "name": "Enhanced netstat Tool",
+      "description": "Faster and more detailed network statistics using eBPF",
+      "category": "system",
+      "software": "netstat/ss replacement",
+      "tags": ["netstat", "ss", "network", "sockets"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "Socket operations",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "sock:inet_sock_set_state"
+          }
+        },
+        {
+          "id": "map-1",
+          "type": "mapAction",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Socket statistics",
+            "mapType": "BPF_MAP_TYPE_HASH"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "map-1"}
+      ]
+    },
+    {
+      "id": "enhanced-strace-tool",
+      "name": "Enhanced strace Tool", 
+      "description": "Low-overhead system call tracing replacement for strace",
+      "category": "system",
+      "software": "strace replacement",
+      "tags": ["strace", "syscall", "tracing", "debugging"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "System call entry",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "raw_syscalls:sys_enter"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Syscall number",
+            "variableType": "long",
+            "operation": "PT_REGS_PARM1"
+          }
+        },
+        {
+          "id": "output-1",
+          "type": "output",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Trace syscall",
+            "outputType": "bpf_trace_printk"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"},
+        {"id": "e2", "source": "var-1", "target": "output-1"}
+      ]
+    },
+    {
+      "id": "webassembly-sandbox-security",
+      "name": "WebAssembly Sandbox Security",
+      "description": "Enforce security policies for WebAssembly runtime sandboxes", 
+      "category": "future",
+      "software": "WebAssembly runtimes",
+      "tags": ["WebAssembly", "WASM", "sandbox", "security"],
+      "initialNodes": [
+        {
+          "id": "attach-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "WASM function call",
+            "attachmentType": "UPROBE",
+            "targetFunction": "wasm_function_invoke"
+          }
+        },
+        {
+          "id": "var-1",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Function signature",
+            "variableType": "u32",
+            "operation": "PT_REGS_PARM1"
+          }
+        }
+      ],
+      "initialEdges": [
+        {"id": "e1", "source": "attach-1", "target": "var-1"}
+      ]
+    }
+  ]
+}

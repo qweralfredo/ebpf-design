@@ -1,0 +1,476 @@
+{
+  "categories": {
+    "observability": "Observability & Performance Analysis",
+    "networking": "Networking (XDP & TC)",
+    "security": "Security (Runtime & Kernel)",
+    "filesystem": "File Systems & Storage",
+    "runtime": "Runtime & Process Execution",
+    "containers": "Container Platforms & Cloud",
+    "development": "Development & Build Tools",
+    "protocols": "Network & Application Protocols",
+    "system": "System Tools & Administration",
+    "future": "Future Projects & Concepts"
+  },
+  "templates": [
+    {
+      "id": "xdp-ddos-mitigation",
+      "name": "XDP DDoS Mitigation",
+      "description": "Basic DDoS protection using XDP to drop packets from suspicious IP addresses at the network interface level",
+      "category": "networking",
+      "software": "Cloudflare Katran, DDoS Mitigation Tools",
+      "initialNodes": [
+        {
+          "id": "attachment-1",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "XDP Attachment",
+            "attachmentType": "XDP",
+            "targetFunction": "xdp_prog",
+            "interface": "eth0"
+          }
+        },
+        {
+          "id": "packet-access-1",
+          "type": "packet",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Parse IP Header",
+            "accessType": "IP_HEADER",
+            "field": "src_addr"
+          }
+        },
+        {
+          "id": "conditional-1",
+          "type": "conditional",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Check Blacklist",
+            "condition": "ip_blacklist_lookup",
+            "operator": "==",
+            "value": "1"
+          }
+        },
+        {
+          "id": "return-drop",
+          "type": "return",
+          "position": { "x": 700, "y": 50 },
+          "data": {
+            "label": "DROP Packet",
+            "action": "XDP_DROP",
+            "returnCode": 1
+          }
+        },
+        {
+          "id": "return-pass",
+          "type": "return",
+          "position": { "x": 700, "y": 150 },
+          "data": {
+            "label": "PASS Packet",
+            "action": "XDP_PASS",
+            "returnCode": 2
+          }
+        }
+      ],
+      "initialEdges": [
+        {
+          "id": "e1-2",
+          "source": "attachment-1",
+          "target": "packet-access-1",
+          "type": "default"
+        },
+        {
+          "id": "e2-3",
+          "source": "packet-access-1",
+          "target": "conditional-1",
+          "type": "default"
+        },
+        {
+          "id": "e3-drop",
+          "source": "conditional-1",
+          "target": "return-drop",
+          "type": "default",
+          "label": "blacklisted"
+        },
+        {
+          "id": "e3-pass",
+          "source": "conditional-1",
+          "target": "return-pass",
+          "type": "default",
+          "label": "allowed"
+        }
+      ]
+    },
+    {
+      "id": "tcp-connection-tracer",
+      "name": "TCP Connection Tracer",
+      "description": "Monitor TCP connections by attaching to tcp_connect kernel function and tracking connection attempts",
+      "category": "Network Monitoring",
+      "initialNodes": [
+        {
+          "id": "attachment-tcp",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "KPROBE Attachment",
+            "attachmentType": "KPROBE",
+            "targetFunction": "tcp_connect",
+            "interface": ""
+          }
+        },
+        {
+          "id": "variable-pid",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Get Process ID",
+            "variableType": "u32",
+            "operation": "bpf_get_current_pid_tgid",
+            "name": "pid"
+          }
+        },
+        {
+          "id": "map-action-counter",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Increment Connection Counter",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "update",
+            "keyType": "u32",
+            "valueType": "u64"
+          }
+        },
+        {
+          "id": "return-ok",
+          "type": "return",
+          "position": { "x": 700, "y": 100 },
+          "data": {
+            "label": "Return Success",
+            "action": "BPF_OK",
+            "returnCode": 0
+          }
+        }
+      ],
+      "initialEdges": [
+        {
+          "id": "tcp-e1-2",
+          "source": "attachment-tcp",
+          "target": "variable-pid",
+          "type": "default"
+        },
+        {
+          "id": "tcp-e2-3",
+          "source": "variable-pid",
+          "target": "map-action-counter",
+          "type": "default"
+        },
+        {
+          "id": "tcp-e3-4",
+          "source": "map-action-counter",
+          "target": "return-ok",
+          "type": "default"
+        }
+      ]
+    },
+    {
+      "id": "latency-tracer",
+      "name": "Basic Latency Tracer",
+      "description": "Measure function execution latency using ktime_get_ns helper and store results in a BPF map",
+      "category": "Performance Analysis",
+      "initialNodes": [
+        {
+          "id": "attachment-latency-entry",
+          "type": "attachment",
+          "position": { "x": 100, "y": 80 },
+          "data": {
+            "label": "Function Entry",
+            "attachmentType": "KPROBE",
+            "targetFunction": "sys_read",
+            "interface": ""
+          }
+        },
+        {
+          "id": "variable-start-time",
+          "type": "variable",
+          "position": { "x": 300, "y": 80 },
+          "data": {
+            "label": "Record Start Time",
+            "variableType": "u64",
+            "operation": "bpf_ktime_get_ns",
+            "name": "start_time"
+          }
+        },
+        {
+          "id": "map-action-store",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 80 },
+          "data": {
+            "label": "Store Start Time",
+            "mapType": "BPF_MAP_TYPE_HASH",
+            "operation": "update",
+            "keyType": "u32",
+            "valueType": "u64"
+          }
+        },
+        {
+          "id": "attachment-latency-exit",
+          "type": "attachment",
+          "position": { "x": 100, "y": 200 },
+          "data": {
+            "label": "Function Exit",
+            "attachmentType": "KRETPROBE",
+            "targetFunction": "sys_read",
+            "interface": ""
+          }
+        },
+        {
+          "id": "variable-end-time",
+          "type": "variable",
+          "position": { "x": 300, "y": 200 },
+          "data": {
+            "label": "Record End Time",
+            "variableType": "u64",
+            "operation": "bpf_ktime_get_ns",
+            "name": "end_time"
+          }
+        },
+        {
+          "id": "map-action-calculate",
+          "type": "mapAction",
+          "position": { "x": 500, "y": 200 },
+          "data": {
+            "label": "Calculate Latency",
+            "mapType": "BPF_MAP_TYPE_HISTOGRAM",
+            "operation": "update",
+            "keyType": "u64",
+            "valueType": "u64"
+          }
+        }
+      ],
+      "initialEdges": [
+        {
+          "id": "lat-e1-2",
+          "source": "attachment-latency-entry",
+          "target": "variable-start-time",
+          "type": "default"
+        },
+        {
+          "id": "lat-e2-3",
+          "source": "variable-start-time",
+          "target": "map-action-store",
+          "type": "default"
+        },
+        {
+          "id": "lat-e4-5",
+          "source": "attachment-latency-exit",
+          "target": "variable-end-time",
+          "type": "default"
+        },
+        {
+          "id": "lat-e5-6",
+          "source": "variable-end-time",
+          "target": "map-action-calculate",
+          "type": "default"
+        }
+      ]
+    },
+    {
+      "id": "file-access-monitor",
+      "name": "File Access Monitor",
+      "description": "Track file system operations by monitoring sys_openat system calls and logging accessed files",
+      "category": "Security Monitoring",
+      "initialNodes": [
+        {
+          "id": "attachment-file",
+          "type": "attachment",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "label": "System Call Hook",
+            "attachmentType": "TRACEPOINT",
+            "targetFunction": "syscalls:sys_enter_openat",
+            "interface": ""
+          }
+        },
+        {
+          "id": "variable-filename",
+          "type": "variable",
+          "position": { "x": 300, "y": 100 },
+          "data": {
+            "label": "Extract Filename",
+            "variableType": "char*",
+            "operation": "bpf_probe_read_user_str",
+            "name": "filename"
+          }
+        },
+        {
+          "id": "conditional-sensitive",
+          "type": "conditional",
+          "position": { "x": 500, "y": 100 },
+          "data": {
+            "label": "Check Sensitive Path",
+            "condition": "strncmp",
+            "operator": "==",
+            "value": "/etc/"
+          }
+        },
+        {
+          "id": "map-action-log",
+          "type": "mapAction",
+          "position": { "x": 700, "y": 50 },
+          "data": {
+            "label": "Log Access Event",
+            "mapType": "BPF_MAP_TYPE_RINGBUF",
+            "operation": "ringbuf_output",
+            "keyType": "struct",
+            "valueType": "file_event"
+          }
+        },
+        {
+          "id": "return-continue",
+          "type": "return",
+          "position": { "x": 700, "y": 150 },
+          "data": {
+            "label": "Continue Execution",
+            "action": "BPF_OK",
+            "returnCode": 0
+          }
+        }
+      ],
+      "initialEdges": [
+        {
+          "id": "file-e1-2",
+          "source": "attachment-file",
+          "target": "variable-filename",
+          "type": "default"
+        },
+        {
+          "id": "file-e2-3",
+          "source": "variable-filename",
+          "target": "conditional-sensitive",
+          "type": "default"
+        },
+        {
+          "id": "file-e3-log",
+          "source": "conditional-sensitive",
+          "target": "map-action-log",
+          "type": "default",
+          "label": "sensitive"
+        },
+        {
+          "id": "file-e3-continue",
+          "source": "conditional-sensitive",
+          "target": "return-continue",
+          "type": "default",
+          "label": "normal"
+        },
+        {
+          "id": "file-elog-continue",
+          "source": "map-action-log",
+          "target": "return-continue",
+          "type": "default"
+        }
+      ]
+    },
+    {
+      "id": "process-memory-tracker",
+      "name": "Process Memory Tracker",
+      "description": "Monitor process memory allocation using tracepoints to track malloc/free patterns and detect memory leaks",
+      "category": "Performance Analysis",
+      "initialNodes": [
+        {
+          "id": "attachment-malloc",
+          "type": "attachment",
+          "position": { "x": 100, "y": 80 },
+          "data": {
+            "label": "Track malloc()",
+            "attachmentType": "UPROBE",
+            "targetFunction": "malloc",
+            "interface": ""
+          }
+        },
+        {
+          "id": "variable-alloc-size",
+          "type": "variable",
+          "position": { "x": 300, "y": 80 },
+          "data": {
+            "label": "Get Allocation Size",
+            "variableType": "size_t",
+            "operation": "PT_REGS_PARM1",
+            "name": "alloc_size"
+          }
+        },
+        {
+          "id": "counter-malloc",
+          "type": "counter",
+          "position": { "x": 500, "y": 80 },
+          "data": {
+            "label": "Increment Malloc Counter",
+            "counterType": "PER_CPU_ARRAY",
+            "operation": "increment",
+            "key": "malloc_count"
+          }
+        },
+        {
+          "id": "attachment-free",
+          "type": "attachment",
+          "position": { "x": 100, "y": 200 },
+          "data": {
+            "label": "Track free()",
+            "attachmentType": "UPROBE",
+            "targetFunction": "free",
+            "interface": ""
+          }
+        },
+        {
+          "id": "variable-free-ptr",
+          "type": "variable",
+          "position": { "x": 300, "y": 200 },
+          "data": {
+            "label": "Get Freed Pointer",
+            "variableType": "void*",
+            "operation": "PT_REGS_PARM1",
+            "name": "free_ptr"
+          }
+        },
+        {
+          "id": "counter-free",
+          "type": "counter",
+          "position": { "x": 500, "y": 200 },
+          "data": {
+            "label": "Increment Free Counter",
+            "counterType": "PER_CPU_ARRAY",
+            "operation": "increment",
+            "key": "free_count"
+          }
+        }
+      ],
+      "initialEdges": [
+        {
+          "id": "mem-e1-2",
+          "source": "attachment-malloc",
+          "target": "variable-alloc-size",
+          "type": "default"
+        },
+        {
+          "id": "mem-e2-3",
+          "source": "variable-alloc-size",
+          "target": "counter-malloc",
+          "type": "default"
+        },
+        {
+          "id": "mem-e4-5",
+          "source": "attachment-free",
+          "target": "variable-free-ptr",
+          "type": "default"
+        },
+        {
+          "id": "mem-e5-6",
+          "source": "variable-free-ptr",
+          "target": "counter-free",
+          "type": "default"
+        }
+      ]
+    }
+  ]
+}
