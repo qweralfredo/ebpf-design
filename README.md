@@ -50,7 +50,32 @@ npm install
 npm run dev
 ```
 
-The application will be available at `http://localhost:3007`
+The application will be available at `http://localhost:3001`
+
+## 🐳 Docker
+
+### Quick Start with Docker
+
+Pull and run the latest image from Docker Hub:
+
+```bash
+docker run -d -p 3007:3007 qweralfredo/ebpf-design:latest
+```
+
+Then access the application at `http://localhost:3007`
+
+### Using Docker Compose
+
+```bash
+docker-compose up -d
+```
+
+### Building from Source
+
+```bash
+docker build -t ebpf-design .
+docker run -d -p 3007:3007 ebpf-design
+```
 
 ## 📁 Structure
 
