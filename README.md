@@ -77,6 +77,35 @@ docker build -t ebpf-design .
 docker run -d -p 3007:3007 ebpf-design
 ```
 
+## 🌐 WebVM.io - Try Online
+
+Run eBPF Low-Code Builder directly in your browser without installing anything!
+
+**Access via WebVM**: [WebVM.io](https://webvm.io/)
+
+### Quick Start in WebVM:
+
+1. Open [WebVM.io](https://webvm.io/)
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/qweralfredo/ebpf-design.git
+   cd ebpf-design
+   ```
+
+3. Install and run:
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+4. Access the application at the provided local URL (typically `http://localhost:5173` or similar)
+
+### Benefits of WebVM:
+- ✅ No local installation required
+- ✅ Full Linux environment in browser
+- ✅ Perfect for testing and demos
+- ✅ Access from any device
+
 ## 📁 Structure
 
 ```
@@ -138,7 +167,11 @@ This project follows best practices from ReactFlow official documentation:
 - https://reactflow.dev/api-reference
 - https://reactflow.dev/learn
 
-## 🔧 Build
+## � Additional Resources
+
+For detailed instructions on using WebVM.io, see [WEBVM.md](./WEBVM.md)
+
+## �🔧 Build
 
 ```bash
 npm run build
