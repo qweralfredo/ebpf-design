@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Download, Code } from 'lucide-react';
 import { MultiLanguageGenerator } from '../utils/multiLanguageGenerator';
+import WebVMIntegration from './WebVMIntegration';
 
 const DeployModal = ({ isOpen, onClose, currentFlow, generatedCode }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('c');
@@ -230,6 +231,11 @@ Generated: ${new Date().toISOString()}
               </p>
             </div>
           )}
+
+          {/* WebVM Integration Section */}
+          <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+            <WebVMIntegration generatedCode={generatedCode} language="c" />
+          </div>
 
           {/* Download Content */}
           <div className="space-y-6">

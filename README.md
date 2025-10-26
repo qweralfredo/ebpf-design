@@ -29,6 +29,11 @@ A modern ReactFlow-based canvas for building eBPF programs visually, based on Re
   - Controls with custom styling
   - Background with dot pattern
   - Panels for information and controls
+- **🌐 WebVM Integration**:
+  - Test directly in browser-based Linux environment
+  - One-click WebVM setup
+  - No local installation required
+  - Perfect for prototyping and demos
 
 ## 🛠 Technologies
 
@@ -170,6 +175,8 @@ This project follows best practices from ReactFlow official documentation:
 ## 📖 Additional Resources
 
 For detailed instructions on using WebVM.io, see [WEBVM.md](./WEBVM.md)
+
+For WebVM Integration Plugin documentation, see [WEBVM-INTEGRATION.md](./WEBVM-INTEGRATION.md)
 
 For comprehensive testing guide, see [TESTING.md](./TESTING.md)
 
