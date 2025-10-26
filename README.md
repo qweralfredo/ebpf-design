@@ -34,6 +34,11 @@ A modern ReactFlow-based canvas for building eBPF programs visually, based on Re
   - One-click WebVM setup
   - No local installation required
   - Perfect for prototyping and demos
+- **🖥️ v86 Integration**:
+  - Full x86 virtual machine in browser (Arch Linux)
+  - Complete Linux environment with package manager
+  - Advanced testing with all system tools
+  - Comprehensive eBPF development capabilities
 
 ## 🛠 Technologies
 
@@ -111,6 +116,46 @@ Run eBPF Low-Code Builder directly in your browser without installing anything!
 - ✅ Perfect for testing and demos
 - ✅ Access from any device
 
+## 🖥️ v86 - Full x86 Virtual Machine
+
+Run eBPF Builder in a complete x86 virtual machine with Arch Linux!
+
+**Access via v86**: [v86 Emulator](https://copy.sh/v86/?profile=archlinux)
+
+### Quick Start in v86:
+
+1. Open [v86 with Arch Linux](https://copy.sh/v86/?profile=archlinux)
+2. Wait for boot (30-60 seconds)
+3. Clone and setup:
+   ```bash
+   git clone https://github.com/qweralfredo/ebpf-design.git
+   cd ebpf-design
+   npm install
+   npm run dev
+   ```
+
+4. Access at `http://localhost:3007`
+
+### Benefits of v86:
+- ✅ Full x86 processor emulation
+- ✅ Complete package manager (pacman)
+- ✅ All system tools available
+- ✅ Persistent storage between sessions
+- ✅ Comprehensive testing environment
+- ✅ Learn eBPF with full Linux access
+
+### v86 vs WebVM Comparison:
+
+| Feature | v86 | WebVM |
+|---------|-----|-------|
+| Boot Time | 30-60s | 5-10s |
+| Environment | Full PC | Linux Kernel |
+| Tools | Complete system | Limited |
+| Performance | Slower | Faster |
+| Use Case | Comprehensive | Quick tests |
+
+For detailed information, see [V86.md](./V86.md) and [V86-INTEGRATION.md](./V86-INTEGRATION.md)
+
 ## 📁 Structure
 
 ```
@@ -177,6 +222,10 @@ This project follows best practices from ReactFlow official documentation:
 For detailed instructions on using WebVM.io, see [WEBVM.md](./WEBVM.md)
 
 For WebVM Integration Plugin documentation, see [WEBVM-INTEGRATION.md](./WEBVM-INTEGRATION.md)
+
+For detailed instructions on using v86, see [V86.md](./V86.md)
+
+For v86 Integration Plugin documentation, see [V86-INTEGRATION.md](./V86-INTEGRATION.md)
 
 For comprehensive testing guide, see [TESTING.md](./TESTING.md)
 
