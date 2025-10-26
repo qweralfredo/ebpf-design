@@ -167,9 +167,11 @@ This project follows best practices from ReactFlow official documentation:
 - https://reactflow.dev/api-reference
 - https://reactflow.dev/learn
 
-## � Additional Resources
+## 📖 Additional Resources
 
 For detailed instructions on using WebVM.io, see [WEBVM.md](./WEBVM.md)
+
+For comprehensive testing guide, see [TESTING.md](./TESTING.md)
 
 ## �🔧 Build
 
